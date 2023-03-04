@@ -22,9 +22,14 @@ private:
     ull mod2() const;
     void divby2();
 
+    friend ull small_div(std::vector<ull> const& D_vec, Int const& I);
+
+    Int(bool sign, std::vector<ull> const& value);
+
 public:
     Int();
     Int(long long int);
+    //    Int(unsigned long long int);
     Int& operator=(Int const&);
 
     bool operator==(Int const&) const;
@@ -51,6 +56,7 @@ public:
     Int& operator--(int);
 
     Int operator*(Int const&) const;
+    friend Int operator*(ull a, Int const& b);
     Int operator/(Int const&) const;
     Int& operator*=(Int const&);
     Int& operator/=(Int const&);
@@ -59,5 +65,7 @@ public:
 
     static Int pow(Int const&, Int);
 };
+
+Int operator*(ull a, Int const& b);
 
 #endif // INT_H

@@ -1,5 +1,6 @@
 #include "Int.h"
 
+#include <algorithm> // reverse
 #include <climits>
 #include <cstdio> // sprintf
 #include <iostream>
@@ -21,7 +22,7 @@ static constexpr ull ull_pow(ull base, ull exp)
 
 static size_t constexpr k = 9;
 static ull constexpr B = ull_pow(10, k); // working in base B
-// (10**k - 1) * (10**k - 1) + (10**k - 1) = 10**k(10**k - 1) < 2**(8*sizeof(ull))
+// (10**k - 1) * (10**k - 1) + (10**k - 1) = 10**k(10**k - 1) < ULLONG_MAX = 2**64 - 1
 // so k <= 9
 
 std::ostream& operator<<(std::ostream& o, Int const& a)
@@ -107,6 +108,10 @@ void Int::divby2()
         value.resize(value.size() - 1);
 }
 
+Int::Int(bool sign, std::vector<ull> const& value)
+    : sign(sign), value(value)
+{
+}
 Int::Int()
     : sign(true)
 {
@@ -119,13 +124,26 @@ Int::Int(long long int l)
         l = -l;
         sign = false;
     }
-    if (ull(l) < B)
-        value.push_back(ull(l));
+    ull k = l;
+    if (k < B)
+        value.push_back(k);
     else {
-        value.push_back(ull(l) % B);
-        value.push_back(ull(l) / B);
+        value.push_back(k % B);
+        value.push_back(k / B);
     }
 }
+/*
+Int::Int(unsigned long long int l)
+    : sign(true)
+{
+    if (l < B)
+        value.push_back(l);
+    else {
+        value.push_back(l % B);
+        value.push_back(l / B);
+    }
+}
+ */
 Int& Int::operator=(Int const& I)
 {
     value = I.value;
@@ -314,10 +332,9 @@ Int Int::operator*(Int const& I) const
     else if (I == 1)
         return *this;
 
-    Int ans;
+    Int ans(true, {});
     ull carry = 0;
 
-    ans.value.clear();
     std::vector<ull>& conv = ans.value;
 
     for (int i = 0; i < I.value.size(); i++) {
@@ -364,6 +381,26 @@ Int Int::operator*(Int const& I) const
 
     return ans;
 }
+Int operator*(ull a, Int const& b)
+{
+    return b * a;
+}
+
+// to be used when quotient < B is guarateed
+static ull small_div(Int const& D, Int const& I)
+{
+    ull ql = 0, qh = B - 1;
+
+    while (true) {
+        ull q = (ql + qh) >> 1;
+        if (D >= (q + 1) * I)
+            ql = q;
+        else if (D < q * I)
+            qh = q;
+        else
+            return q;
+    }
+}
 
 Int Int::operator/(Int const& I) const
 {
@@ -380,20 +417,35 @@ Int Int::operator/(Int const& I) const
     else if (*this < I)
         return 0;
 
-    Int ql(0), qh(*this);
+    Int ans(true, {});
 
-    // quotient at this point is never *this (for that either *this == 0 or I == 1)
+    size_t i = this->value.size();
+    Int D(*this);
+    //    std::cout << D << ' ' << 0 << '\n';
+    while (D > I) {
+        Int J(true, std::vector<ull>(D.value.begin() + (D.value.size() - I.value.size()), D.value.end()));
+        if (J < I) {
+            J = Int(true, std::vector<ull>(D.value.begin() + (D.value.size() - I.value.size() - 1), D.value.end()));
+        }
+        ull q = small_div(J, I);
+        Int rem = J - q * I;
+        //        std::cout << J << ' ' << q << ' ' << rem << ' ';
+        ans.value.push_back(q);
+        for (size_t i = 0; i < (rem == 0 ? I.value.size() : (I.value.size() - rem.value.size())); ++i)
+            ans.value.push_back(0);
 
-    while (true) {
-        Int q = ql + qh;
-        q.divby2();
-        if (*this >= (q + 1) * I)
-            ql = q;
-        else if (*this < q * I)
-            qh = q;
-        else
-            return q;
+        size_t l = (D.value.size() > J.value.size() ? D.value.size() - J.value.size() : 0);
+        D.value.resize(l);
+        if (rem != 0)
+            for (ull k : rem.value)
+                D.value.push_back(k);
+        if (D.value.size() == 0)
+            D.value.push_back(0);
+        //        std::cout << D << ' ' << ans << '\n';
     }
+
+    std::reverse(ans.value.begin(), ans.value.end());
+    return ans;
 }
 
 Int& Int::operator*=(Int const& I)
