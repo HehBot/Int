@@ -1,4 +1,4 @@
-#include "Int.hpp"
+#include "Int.h"
 
 #include <climits>
 #include <cstdio> // sprintf
@@ -253,14 +253,6 @@ Int Int::operator-(Int const& I) const
         d -= B * (1 - borrow);
         ret.value.push_back(d);
     }
-    /*
-    if (d >= B) {
-        borrow = 0;
-        d -= B;
-    }
-    else
-        borrow = 1;
-     */
     for (int i = l; i < m; i++) {
         ull d = value[i] + (B - borrow);
         borrow = (d < B);
@@ -375,7 +367,7 @@ Int Int::operator*(Int const& I) const
 
 Int Int::operator/(Int const& I) const
 {
-    if (I.value.size() == 1 && I.value[0] == 0)
+    if (I == 0)
         throw std::invalid_argument("Division by zero");
     if (!sign && I.sign)
         return -((-(*this)) / I);
@@ -385,8 +377,8 @@ Int Int::operator/(Int const& I) const
         return ((-*this) / (-I));
     else if (I == 1)
         return *this;
-    else if (*this == 0)
-        return *this;
+    else if (*this < I)
+        return 0;
 
     Int ql(0), qh(*this);
 

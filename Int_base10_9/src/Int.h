@@ -1,5 +1,5 @@
-#ifndef INT_HPP
-#define INT_HPP
+#ifndef INT_H
+#define INT_H
 
 #include <iostream>
 #include <string>
@@ -60,4 +60,4 @@ public:
     static Int pow(Int const&, Int);
 };
 
-#endif // INT_HPP
+#endif // INT_H
